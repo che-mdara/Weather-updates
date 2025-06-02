@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🌍 Malawi Climate & Disaster Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f2f6fa;
+      padding: 10px;
+    }
+
+    header {
+      background: #1a5276;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      border-radius: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 18px;
+      color: #154360;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #1a5276;
+      color: white;
+      border: none;
+    }
+
+    button:hover {
+      background-color: #154360;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    a {
+      color: #1a5276;
+      text-decoration: underline;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 15px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🌦️ Malawi Climate & Disaster Dashboard</h1>
+    <p>Live weather, alerts, emergency contacts & more</p>
+  </header>
+
+  <div class="dashboard">
+
+    <!-- Weather Card -->
+    <div class="card">
+      <h2>🌡️ Weather in Your City</h2>
+      <input type="text" id="cityInput" placeholder="Enter city (e.g. Lilongwe)">
+      <button onclick="getWeather()">Get Weather</button>
+      <p id="weatherResult">--</p>
+    </div>
+
+    <!-- Disaster Alerts Card -->
+    <div class="card">
+      <h2>⚠️ Malawi Disaster Alerts</h2>
+      <div id="disasterList">Loading alerts...</div>
+    </div>
+
+    <!-- Emergency Contacts -->
+    <div class="card">
+      <h2>📞 Emergency Contacts</h2>
+      <button onclick="window.location.href='tel:997'">🚨 Call Emergency (997)</button><br><br>
+      <button onclick="window.location.href='https://wa.me/265991234567'">💬 WhatsApp Disaster Officer</button>
+    </div>
+
+    <!-- Login Area -->
+    <div class="card" id="loginSection">
+      <h2>🔐 Admin Login</h2>
+      <input type="password" id="adminPass" placeholder="Enter admin password">
+      <button onclick="checkLogin()">Login</button>
+      <p id="loginStatus"></p>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="card hidden" id="adminPanel">
+      <h2>🛠️ Admin Panel</h2>
+      <textarea id="adminUpdate" rows="4" style="width: 100%" placeholder="Post emergency info here..."></textarea>
+      <button onclick="postUpdate()">Post Update</button>
+      <div id="adminPostResult"></div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    🌍 Powered by OpenWeatherMap & ReliefWeb | Built for Malawi communities
+  </div>
+
+  <script>
+    const apiKey = "5a941ce8ea973277a7f9a43797cfef4b"; // Replace with your OpenWeatherMap API key
+    const adminPassword = "admin123"; // You can change this password
+
+    function getWeather() {
+      const city = document.getElementById("cityInput").value;
+      fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.main) {
+            document.getElementById("weatherResult").innerHTML = `
+              <strong>${data.name}</strong><br>
+              🌡️ Temp: ${data.main.temp}°C<br>
+              ☁️ Condition: ${data.weather[0].description}<br>
+              💨 Wind: ${data.wind.speed} m/s
+            `;
+          } else {
+            document.getElementById("weatherResult").innerText = "City not found.";
+          }
+        });
+    }
+
+    function getDisasterUpdates() {
+      fetch("https://api.reliefweb.int/v1/disasters?appname=climate-portal&profile=simplified&limit=10&sort[]=date:desc")
+        .then(res => res.json())
+        .then(data => {
+          let html = "<ul>";
+          data.data.forEach(item => {
+            if (item.fields.country.some(c => c.name === "Malawi")) {
+              html += `<li><strong>${item.fields.name}</strong> - ${item.fields.date.created.substr(0, 10)}</li>`;
+            }
+          });
+          html += "</ul>";
+          document.getElementById("disasterList").innerHTML = html || "No Malawi alerts found.";
+        });
+    }
+
+    function checkLogin() {
+      const inputPass = document.getElementById("adminPass").value;
+      if (inputPass === adminPassword) {
+        document.getElementById("adminPanel").classList.remove("hidden");
+        document.getElementById("loginSection").classList.add("hidden");
+      } else {
+        document.getElementById("loginStatus").innerText = "Incorrect password.";
+      }
+    }
+
+    function postUpdate() {
+      const update = document.getElementById("adminUpdate").value;
+      if (update.trim() === "") {
+        alert("Please enter something.");
+        return;
+      }
+      document.getElementById("adminPostResult").innerHTML = `
+        <p><strong>📢 Update Posted:</strong><br>${update}</p>
+      `;
+      document.getElementById("adminUpdate").value = "";
+    }
+
+    window.onload = getDisasterUpdates;
+  </script>
+
+</body>
+</html>
